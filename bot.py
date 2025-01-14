@@ -4,18 +4,16 @@
 # Imports
 import datetime
 import io
-import json
 import os
 import re
 import subprocess
 import tempfile
+from dotenv import load_dotenv
 from difflib import get_close_matches as gcm
 from pathlib import Path
 from urllib.request import Request, urlopen
 
 import psycopg2
-
-import config
 
 import dataframe_image as dfi
 import discord
@@ -36,9 +34,10 @@ from sqlalchemy.orm import Session, sessionmaker
 from tabulate import tabulate
 from titlecase import titlecase
 
-from config import PGUSER, PGPASS, PGHOST, PGDATA
+load_dotenv()
 
-POSTGRES_URL = f"postgresql://{PGUSER}:{PGPASS}@{PGHOST}:5432/{PGDATA}"
+
+POSTGRES_URL = f"postgresql://{os.getenv('PGUSER')}:{os.getenv('PGPASS')}@{os.getenv('PGHOST')}:5432/{os.getenv('PGDATA')}"
 
 
 def table_to_file(pandas_table):
@@ -164,7 +163,12 @@ def chunk_strings(s, limit=1900):
     return chunks
 
 
-con = psycopg2.connect(dbname=PGDATA, user=PGUSER, password=PGPASS, host=PGHOST)
+con = psycopg2.connect(
+    dbname=os.getenv("PGDATA"),
+    user=os.getenv("PGUSER"),
+    password=os.getenv("PGPASS"),
+    host=os.getenv("PGHOST"),
+)
 cur = con.cursor()
 
 
@@ -281,7 +285,7 @@ class PersistentViewBot(commands.Bot):
         intents.members = True
 
         super().__init__(
-            command_prefix=config.PREFIX, intents=intents, case_insensitive=True
+            command_prefix=os.getenv("PREFIX"), intents=intents, case_insensitive=True
         )
 
     async def setup_hook(self) -> None:
@@ -2199,4 +2203,4 @@ async def on_command_error(ctx, error):
     raise error
 
 
-client.run(config.DISCORD_TOKEN)
+client.run(os.getenv("DISCORD_TOKEN"))
