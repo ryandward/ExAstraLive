@@ -111,6 +111,12 @@ def chunk_strings(s, limit=1900):
 #     port=os.getenv("PGPORT"),
 # )
 # cur = con.cursor()
+print(f"DATABASE_URL: {os.getenv('DATABASE_URL')}")
+print(f"PGDATABASE: {os.getenv('PGDATABASE')}")
+print(f"PGUSER: {os.getenv('PGUSER')}")
+print(f"PGPASSWORD: {os.getenv('PGPASSWORD')}")
+print(f"PGHOST: {os.getenv('PGHOST')}")
+print(f"PGPORT: {os.getenv('PGPORT')}")
 
 con = psycopg2.connect(
     dbname="railway",  # The database name
