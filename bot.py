@@ -103,15 +103,15 @@ def chunk_strings(s, limit=1900):
     return chunks
 
 
-# con = psycopg2.connect(
-#     dbname=os.getenv("PGDATA"),
-#     user=os.getenv("PGUSER"),
-#     password=os.getenv("PGPASS"),
-#     host=os.getenv("PGHOST"),
-# )
-# cur = con.cursor()
+con = psycopg2.connect(
+    dbname=os.getenv("PGDATA"),
+    user=os.getenv("PGUSER"),
+    password=os.getenv("PGPASSWORD"),
+    host=os.getenv("DATABASE_URL"),
+)
 
-con = psycopg2.connect(os.getenv("DATABASE_URL"))
+
+# con = psycopg2.connect(os.getenv("DATABASE_URL"))
 cur = con.cursor()
 
 
