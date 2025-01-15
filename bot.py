@@ -37,87 +37,26 @@ from titlecase import titlecase
 load_dotenv()
 
 
-POSTGRES_URL = f"postgresql://{os.getenv('PGUSER')}:{os.getenv('PGPASS')}@{os.getenv('PGHOST')}:5432/{os.getenv('PGDATA')}"
+POSTGRES_URL = f"postgresql://{os.getenv('PGUSER')}:{os.getenv('PGPASS')}@{os.getenv('PGHOST')}:{os.getenv('PGPORT')}/{os.getenv('PGDATA')}"
 
 
 def table_to_file(pandas_table):
     pandas_table.columns = pandas_table.columns.str.title()
 
-    if len(pandas_table) > 10:
-        # Create a temporary text file
-        with tempfile.NamedTemporaryFile(
-            prefix="Table_", suffix=".txt", delete=False
-        ) as temp:
-            # Use tabulate for DataFrames with more than 20 rows
-            table_string = tabulate(
-                pandas_table,
-                headers=pandas_table.columns,
-                tablefmt="simple",
-                showindex=False,
-            )
-            temp.write(table_string.encode())
+    with tempfile.NamedTemporaryFile(
+        prefix="Table_", suffix=".txt", delete=False
+    ) as temp:
+        # Use tabulate for DataFrames with more than 20 rows
+        table_string = tabulate(
+            pandas_table,
+            headers=pandas_table.columns,
+            tablefmt="simple",
+            showindex=False,
+        )
+        temp.write(table_string.encode())
 
-            # Create a discord file
-            file = discord.File(temp.name)
-
-    else:
-        # Create a temporary file
-        with tempfile.NamedTemporaryFile(
-            prefix="Table_", suffix=".png", delete=False
-        ) as temp:
-            # Define a function to change the background color if all entries are spaces
-            def highlight_spaces(data):
-                attr = (
-                    "background-color: #a3a3a3"  # change 'gray' to your preferred color
-                )
-                padding_attr = "padding: 3"
-                if "".join(str(d) for d in data).isspace():
-                    return [f"{attr}; {padding_attr}"] * len(data)
-                else:
-                    return [""] * len(data)
-
-            def alternating_color(data):
-                colors = [
-                    "background-color: white",
-                    "background-color: whitesmoke",
-                ]  # change colors as needed
-                default_color = "background-color: default"
-                color_index = 0
-                color_list = []
-                for i in range(len(data)):
-                    item = data.iloc[i]
-                    if np.isscalar(item):
-                        item_str = str(item)
-                    else:
-                        item_str = "".join(str(d) for d in item)
-                    if item_str.isspace():
-                        color_list.append(default_color)
-                        color_index = 0  # reset color index at section breaks
-                    else:
-                        color_list.append(colors[color_index])
-                        color_index = 1 - color_index  # alternate color index
-                return color_list
-
-            mpl_table_styled = (
-                pandas_table.style.set_properties(**{"text-align": "left"})
-                .set_table_styles(
-                    [dict(selector="th", props=[("text-align", "center")])]
-                )
-                .apply(highlight_spaces, axis=1)
-                .apply(alternating_color, axis=0)
-            )
-
-            dfi.export(mpl_table_styled.hide(axis="index"), temp.name)
-
-            # Open the image file
-            table_image = Image.open(temp.name)
-            # Convert the image to grayscale
-            table_image = table_image.convert("L")
-            # Save the image with reduced quality
-            table_image.save(temp.name, optimize=True, quality=20)
-
-            # Create a discord file
-            file = discord.File(temp.name)
+        # Create a discord file
+        file = discord.File(temp.name)
 
     return file, temp.name
 
