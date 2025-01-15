@@ -105,15 +105,12 @@ def chunk_strings(s, limit=1900):
 
 con = psycopg2.connect(
     dbname=os.getenv("POSTGRES_DB"),  # Resolves to "railway"
-    user=os.getenv("PGUSER"),        # Resolves to "postgres"
+    user=os.getenv("PGUSER"),  # Resolves to "postgres"
     password=os.getenv("PGPASSWORD"),  # Resolves to the password
-    host=os.getenv("PGHOST"),        # Resolves to "postgres.railway.internal"
-    port=os.getenv("PGPORT"),        # Resolves to "5432"
+    host=os.getenv("PGHOST"),  # Resolves to "postgres.railway.internal"
+    port=os.getenv("PGPORT"),  # Resolves to "5432"
 )
 
-print("Connected successfully!")
-cur = con.cursor()
-)
 print("Connected successfully!")
 cur = con.cursor()
 
