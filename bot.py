@@ -37,8 +37,8 @@ from titlecase import titlecase
 load_dotenv()
 
 
-POSTGRES_URL = f"postgresql://{os.getenv('PGUSER')}:{os.getenv('PGPASSWORD')}@{os.getenv('PGHOST')}:{os.getenv('PGPORT')}/{os.getenv('POSTGRES_DB')}"
-# POSTGRES_URL = os.getenv("DATABASE_URL")
+# POSTGRES_URL = f"postgresql://{os.getenv('PGUSER')}:{os.getenv('PGPASSWORD')}@{os.getenv('PGHOST')}:{os.getenv('PGPORT')}/{os.getenv('POSTGRES_DB')}"
+POSTGRES_URL = os.getenv("DATABASE_URL")
 
 
 def table_to_file(pandas_table):
@@ -2145,6 +2145,17 @@ async def on_command_error(ctx, error):
         return
 
     raise error
+
+
+@client.command(help="Restarts the bot (Officer only).", brief="Restarts the bot")
+@commands.has_role("Officer")
+async def restart(ctx):
+    await ctx.send(":arrows_counterclockwise: Restarting bot...")
+    try:
+        # Just exit cleanly - Railway will automatically restart the process
+        os._exit(0)
+    except Exception as e:
+        await ctx.send(f":x: Failed to restart: {str(e)}")
 
 
 client.run(os.getenv("DISCORD_TOKEN"))
