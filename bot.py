@@ -37,8 +37,8 @@ from titlecase import titlecase
 load_dotenv()
 
 
-# POSTGRES_URL = f"postgresql://{os.getenv('PGUSER')}:{os.getenv('PGPASS')}@{os.getenv('PGHOST')}:{os.getenv('PGPORT')}/{os.getenv('PGDATA')}"
-POSTGRES_URL = os.getenv("DATABASE_URL")
+POSTGRES_URL = f"postgresql://{os.getenv('PGUSER')}:{os.getenv('PGPASSWORD')}@{os.getenv('PGHOST')}:{os.getenv('PGPORT')}/{os.getenv('POSTGRES_DB')}"
+# POSTGRES_URL = os.getenv("DATABASE_URL")
 
 
 def table_to_file(pandas_table):
@@ -110,6 +110,11 @@ con = psycopg2.connect(
     host=os.getenv("PGHOST"),  # Resolves to "postgres.railway.internal"
     port=os.getenv("PGPORT"),  # Resolves to "5432"
 )
+
+# debug and print all the connection properties
+
+print("Connection properties")
+print(con.get_dsn_parameters(), "\n")
 
 print("Connected successfully!")
 cur = con.cursor()
@@ -580,10 +585,6 @@ async def declare_toon(
     user_name: str = None,
     discord_id: str = None,
 ):
-    # await ctx.reply(
-    #     "Unfortunately, character declaration commands preceded with a `!` are no longer supported by Discord.\nPlease see `/help` for usage on `/main`, and `/alt`, and `/bot`.\nFor changing status between `main`, `alt`, and `bot`, see  `/change`."
-    # )
-    # return
     current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     if level is not None:
@@ -1219,9 +1220,9 @@ async def logs(
     ),
 ):
 
-    census = pd.read_sql_query("SELECT * FROM census", con)
-    dkp = pd.read_sql_query("SELECT * FROM dkp", con)
-    raids = pd.read_sql_query("SELECT * FROM raids", con)
+    census = pd.read_sql_query("SELECT * FROM census", POSTGRES_URL)
+    dkp = pd.read_sql_query("SELECT * FROM dkp", POSTGRES_URL)
+    raids = pd.read_sql_query("SELECT * FROM raids", POSTGRES_URL)
 
     # timestamp
     re1 = "(?<=^\[).*?(?=])"
