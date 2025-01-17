@@ -2152,10 +2152,9 @@ async def on_command_error(ctx, error):
 async def restart(ctx):
     await ctx.send(":arrows_counterclockwise: Restarting bot...")
     try:
-        # Just exit cleanly - Railway will automatically restart the process
-        os._exit(0)
+        os.system("kill 1")
     except Exception as e:
-        await ctx.send(f":x: Failed to restart: {str(e)}")
+        await ctx.send(f":x: {str(e)}")
 
 
 client.run(os.getenv("DISCORD_TOKEN"))
