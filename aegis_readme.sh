@@ -1,7 +1,7 @@
 #!/bin/bash
 
 curl --max-time 10 -k \
-	-o rap.html.tmp 'https://www.p99sanctum.com/index.php/Points/?s=&sort=3%7casc&mdkpid=0' \
+	-o rap.html.tmp 'https://p99sanctum.com/index.php/Points' \
 	-H 'Connection: keep-alive' \
 	-H 'sec-ch-ua: " Not A;Brand";v="99", "Chromium";v="98", "Google Chrome";v="98"' \
 	-H 'sec-ch-ua-mobile: ?0' \
