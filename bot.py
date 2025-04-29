@@ -1389,7 +1389,6 @@ async def sanctum(
         default=None,
     ),
 ):
-
     view = discord.ui.View(timeout=None)
     view.add_item(
         DeleteButton(user_id=ctx.author.id, original_message_id=ctx.message.id)
@@ -1397,16 +1396,12 @@ async def sanctum(
     view.add_item(DMButton(ctx.author.id))
 
     async with ctx.typing():
-
+        # File age checking (unchanged)
         st = os.stat("rap.html")
         mtime = st.st_mtime
-
         current_time = datetime.datetime.now()
-
         elapsed = current_time - datetime.datetime.fromtimestamp(mtime)
         elapsed = chop_microseconds(elapsed)
-
-        # Convert the elapsed time to a Unix timestamp
         elapsed_timestamp = int((current_time - elapsed).timestamp())
 
         if elapsed >= datetime.timedelta(minutes=5):
@@ -1416,76 +1411,112 @@ async def sanctum(
             current_time = datetime.datetime.now()
             elapsed = current_time - datetime.datetime.fromtimestamp(mtime)
 
-        # Convert the elapsed time to a Unix timestamp
         elapsed_timestamp = int((current_time - elapsed).timestamp())
-
-        # Use Discord's timestamp formatting syntax
         RAP_age = f"<t:{elapsed_timestamp}:R>."
 
         census = pd.read_sql_query("SELECT * FROM census", POSTGRES_URL)
 
-        rap_totals = pd.read_html("rap.html")
-
-        # Iterate over all tables
-        for table in rap_totals:
-            # Check if the table has the required columns
-            if set(["Name", "Default"]).issubset(table.columns):
-                # This is the table we want, so we break the loop
-                rap_totals = table
-                break
-        else:
-            # If no table was found, send a message and return
+        # NEW APPROACH: Use BeautifulSoup to parse the HTML properly
+        try:
+            from bs4 import BeautifulSoup
+        except ImportError:
             await ctx.send(
-                "Unfortunately, no table with the required columns was found. Please alert an officer."
+                "Required library 'beautifulsoup4' not installed. Please run: pip install beautifulsoup4"
             )
             return
 
-        # Now you can use rap_totals as before
-        rap_totals = rap_totals[["Name", "Default"]]
-        rap_totals["Name"] = rap_totals["Name"].str.capitalize()
-        rap_totals.columns = ["Name", "RAP"]
-        print(rap_totals.to_string())
+        try:
+            # Read and parse the HTML file
+            with open("rap.html", "r", encoding="utf-8") as f:
+                html_content = f.read()
 
-        if toon == None:
-            user_name = format(ctx.author.display_name)
-            # discord_id = str(ctx.message.guild.get_member_named(user_name).id)
-            discord_id = str(ctx.author.id)
+            soup = BeautifulSoup(html_content, "html.parser")
 
-        if toon != None:
-            toon = toon.capitalize()
-            user_name = format(toon)
-            discord_id = census.loc[census["name"] == toon, "discord_id"].item()
+            # Find all character rows - based on your grep output, we're looking for rows with character links
+            character_data = []
 
-        inner_merged = pd.merge(
-            rap_totals, census, left_on="Name", right_on="name", how="inner"
-        )
+            # Look for table rows with character links
+            rows = soup.find_all("tr")
+            for row in rows:
+                # Find character links within this row
+                char_link = row.find(
+                    "a", href=lambda href: href and "Character" in href
+                )
+                if char_link:
+                    # Found a character row
+                    char_name = char_link.text.strip()
 
-        inner_merged = inner_merged[["discord_id", "name", "RAP"]]
+                    # Find DKP value (in the third td, inside a span with class 'positive')
+                    dkp_cell = row.find_all("td")
+                    if len(dkp_cell) >= 3:
+                        dkp_value = dkp_cell[2].text.strip()
+                        try:
+                            dkp_value = int(dkp_value)
+                            character_data.append(
+                                {"Name": char_name.capitalize(), "RAP": dkp_value}
+                            )
+                        except ValueError:
+                            # Skip if DKP value isn't a number
+                            continue
 
-        inner_merged = inner_merged.sort_values(by=["name"])
+            # Check if we found any characters
+            if not character_data:
+                await ctx.send(
+                    "No character data found in the HTML. Please alert an officer."
+                )
+                return
 
-        rap_totals = inner_merged.loc[inner_merged["discord_id"] == discord_id]
+            # Create DataFrame from the character data
+            rap_totals = pd.DataFrame(character_data)
+            print(f"Found {len(rap_totals)} characters with DKP data")
 
-        rap_list = discord.Embed(
-            title=f":shield: Sanctum DKP as of {RAP_age}",
-            description=f"<@{format(discord_id)}> has `{len(rap_totals)}` linked main{'s' if len(rap_totals) != 1 else ''} with DKP in [Sanctum](https://p99sanctum.com).",
-            colour=discord.Colour.from_rgb(241, 196, 15),
-        )
+            # Continue with the original logic
+            if toon == None:
+                user_name = format(ctx.author.display_name)
+                discord_id = str(ctx.author.id)
+            else:
+                toon = toon.capitalize()
+                user_name = format(toon)
+                discord_id = census.loc[census["name"] == toon, "discord_id"].item()
 
-        if len(rap_totals) > 0:
-            rap_list.add_field(
-                name=":bust_in_silhouette: Name",
-                value="```\n" + "\n".join(rap_totals.name.tolist()) + "\n```",
-                inline=True,
+            inner_merged = pd.merge(
+                rap_totals, census, left_on="Name", right_on="name", how="inner"
             )
 
-            rap_list.add_field(
-                name=":arrow_up:️ DKP",
-                value="```\n" + "\n".join(map(str, rap_totals.RAP.tolist())) + "\n```",
-                inline=True,
+            inner_merged = inner_merged[["discord_id", "name", "RAP"]]
+            inner_merged = inner_merged.sort_values(by=["name"])
+            rap_totals = inner_merged.loc[inner_merged["discord_id"] == discord_id]
+
+            rap_list = discord.Embed(
+                title=f":shield: Sanctum DKP as of {RAP_age}",
+                description=f"<@{format(discord_id)}> has `{len(rap_totals)}` linked main{'s' if len(rap_totals) != 1 else ''} with DKP in [Sanctum](https://p99sanctum.com).",
+                colour=discord.Colour.from_rgb(241, 196, 15),
             )
 
-        await ctx.send(embed=rap_list, view=view)
+            if len(rap_totals) > 0:
+                rap_list.add_field(
+                    name=":bust_in_silhouette: Name",
+                    value="```\n" + "\n".join(rap_totals.name.tolist()) + "\n```",
+                    inline=True,
+                )
+
+                rap_list.add_field(
+                    name=":arrow_up:️ DKP",
+                    value="```\n"
+                    + "\n".join(map(str, rap_totals.RAP.tolist()))
+                    + "\n```",
+                    inline=True,
+                )
+
+            await ctx.send(embed=rap_list, view=view)
+
+        except Exception as e:
+            import traceback
+
+            print(f"Error in sanctum command: {str(e)}")
+            print(traceback.format_exc())
+            await ctx.send(f"Error processing DKP data: {str(e)}")
+            return
 
 
 @client.command(
