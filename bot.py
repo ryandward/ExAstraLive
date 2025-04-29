@@ -1462,7 +1462,7 @@ async def sanctum(
             # Check if we found any characters
             if not character_data:
                 await ctx.send(
-                    "No character data found in the HTML. Please alert an officer."
+                    "Timeout exceeded 30 seconds. Please complain to sanctum staff."
                 )
                 return
 
